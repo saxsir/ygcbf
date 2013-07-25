@@ -18,7 +18,7 @@ function getCats(_json) {
   });
 
  //@notice 重複しているものを削除してリターン
-  return $.unique(cats);
+  return unique(cats);
 }
 
 // @arguments [_json] json形式で渡される友だちのlikesデータリスト
@@ -55,7 +55,8 @@ function initDataSets(_names, _cats) {
 }
 
 // @arguments [_json] json形式で渡される友だちのlikesデータリスト
-// @return [Array] 解析しやすい形に整形されたデータセット
+// @return [Array] 解析しやすい形に整形されたデータセット。
+// データをいれたオブジェクトの配列で、nameに友だちの名前、dataにlikeしたカテゴリごとの数が入ってる
 function makeDataSets(_json, _names, _cats) {
   var dsets = initDataSets(_names, _cats);
   var res = [];
@@ -78,11 +79,39 @@ function makeDataSets(_json, _names, _cats) {
   return dsets;
 }
 
+// @arguments [_dsets] データをいれたオブジェクトの配列
+// @return [Array] likeしたカテゴリごとの数を配列にして、全員分まとめて返す
+function getData(_dsets, _cats) {
+  var data = [], tdata = [];
+  _dsets.forEach(function(u){
+    tdata = [];
+    _cats.forEach(function(cat){
+      tdata.push(u.data[cat]);
+    });
+    data.push(tdata);
+  });
+  return data;
+}
+
+// @arguments [array] 重複した要素が入っている配列（入ってなくてもいいけど）
+// @return [Array] 重複要素を削除した配列
+function unique(array) {
+  var storage = {};
+  var uniqueArray = [];
+  var i, al, value;
+  for ( i=0, al = array.length; i < al; i++) {
+    value = array[i];
+    if (!(value in storage)) {
+      storage[value] = true;
+      uniqueArray.push(value);
+    }
+  }
+  return uniqueArray;
+}
+
 // @notice このコードが動けばOK
 // @memo jQuery(function($){
 $('#eval').click(function(){
-  var clusters = new clustersjs.Clusters();
-
   // @notice データの取得
   // @todo アプリにする時はログインしているユーザーごとにfbのgraphAPIから取得する
   var json = JSON.parse($('#friends-data').val());
@@ -93,13 +122,31 @@ $('#eval').click(function(){
   // console.log(names); //debug
 
   // @notice 友だちのlikesデータリストからカテゴリ一覧を取得
+  // @todo 完全に重複削除できていない
   var cats = [];
   cats = getCats(json);
   // console.log(cats); //debug
 
   // @notice 解析用データセットの作成
-  var datasets = [];
-  datasets = makeDataSets(json, names, cats);
-  // console.log(datasets); //debug
+  var dsets = [];
+  dsets = makeDataSets(json, names, cats);
+  // console.log(dsets); //debug
 
+  // @notice データセットからdataを取り出す
+  var data = [];
+  data = getData(dsets, cats);
+  // console.log(data); //debug
+
+  // @notice name, cats, dataが揃ったのでこれでクラスタリングできる
+  console.log('Run kclustering..');
+  var clusters = new clustersjs.Clusters();
+  var kclust = clusters.kcluster(data, undefined, 5);
+  // console.log(kclust); //debug
+  for (i = 0; i < kclust.length; i++) {
+    console.log('<クラスター' + i + '>');
+    for (j = 0; j < kclust[i].length; j++) {
+      console.log(names[kclust[i][j]]);
+    }
+    console.log('');
+  }
 });
