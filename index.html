@@ -6,13 +6,15 @@
     <link rel="stylesheet" href="css/style.css" media="all">
   </head>
   <body>
+    <div id="fb-root"></div>
     <h1>お前ら、友だちになれると思うよ</h1>
-    <h2>分析したい友だちのデータリストをここに貼る</h2>
-    <textarea id="friends-data" style="width: 100%; height:400px;"></textarea>
-    <button id="eval">実行する</button>
+    <button class="btn btn-success" id="fb-auth">Login</button>
+    <button id="eval">データ取得</button>
+    <div id="result"></div>
     <!-- JavaScript Files-->
     <script src="js/jquery-1.9.1.js"></script>
     <script src="js/clusters.js"></script>
+    <script src="js/ygcbf.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>
