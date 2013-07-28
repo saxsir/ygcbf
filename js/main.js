@@ -23,13 +23,16 @@ function getCats(_json) {
 
 // @arguments [_json] json形式で渡される友だちのlikesデータリスト
 // @return [Array] 友だちの名前が入った1次元の配列
-function getNames(_json) {
+function getUser(_json) {
   var names = [];
   var friends = _json.friends.data;
   friends.forEach(function(friend){
     // @notice likesの長さが0ならスルー
     if (friend.likes) {
-      names.push(friend.name);
+      names.push({
+        "name" : friend.name,
+        "picture" : friend.picture.data.url
+        });
     }
   });
 
@@ -116,9 +119,16 @@ $('#eval').click(function(){
   // @todo アプリにする時はログインしているユーザーごとにfbのgraphAPIから取得する
   var json = JSON.parse($('#friends-data').val());
 
-  // @notice 友だちのlikesデータリストから名前一覧を取得
+  // @notice 友だちのlikesデータリストから名前一覧 & プロフ写真のURIを取得
+  var users = [];
+  users = getUser(json);
+  // console.log(users); //debug
+
   var names = [];
-  names = getNames(json);
+  users.forEach(function(user){
+    names.push(user.name);
+  });
+
   // console.log(names); //debug
 
   // @notice 友だちのlikesデータリストからカテゴリ一覧を取得
@@ -141,14 +151,34 @@ $('#eval').click(function(){
   var clusters = new clustersjs.Clusters();
   var kclust = clusters.kcluster(data, undefined, 4);
   // console.log(kclust); //debug
-  var i;
+
+  // @notice コンソールに結果を出力
+  // @todo これだけだとなんのクラスタか分からないので、クラスタごとに特徴のあるカテゴリを抽出して表示したい
   kclust.forEach(function(clust, i){
     console.log('<クラスター' + i + '>');
     clust.forEach(function(userIndex){
-      console.log(names[userIndex]);
+      console.log(users[userIndex].name);
+      console.log(users[userIndex].picture);
     });
     console.log('');
   });
 
-  // @todo これだけだとなんのクラスタか分からないので、クラスタごとに特徴のあるカテゴリを抽出する
+  // @notice htmlに要素追加して表示
+  kclust.forEach(function(clust, i){
+    var d = document;
+    var div = d.createElement('div');
+    var h2 = d.createElement('h2');
+    h2.innerHTML = "クラスター" + i;
+    var ul = d.createElement('ul');
+    clust.forEach(function(userIndex){
+      var li = d.createElement('li');
+      li.innerHTML = users[userIndex].name;
+      ul.appendChild(li);
+    });
+
+    div.appendChild(h2);
+    div.appendChild(ul);
+    $('#result').append(div);
+  });
+
 });
