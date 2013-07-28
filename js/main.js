@@ -23,7 +23,6 @@ window.fbAsyncInit = function () {
   // @notice SDKロード後にやりたいことはこの下にかく
   FB.getLoginStatus(updateButton);
   FB.Event.subscribe('auth.statusChange', updateButton);
-
   $('#eval').click(function () {
     // console.log(uid); //debug
     $("#loading").html("<img src='./img/load.gif'/>");
@@ -31,6 +30,7 @@ window.fbAsyncInit = function () {
     FB.api('/' + uid + '?fields=friends.limit(30).fields(likes.limit(50),name,picture.type(square),id),name', function (result) {
       // console.log('response', result); //debug
       $("#loading").empty();
+
       ygcbf.analyze(result);
     });
   });
@@ -56,6 +56,7 @@ function updateButton(response) {
   } else {
     button.innerHTML = 'FacebookアカウントでLogin';
     button.className = 'btn btn-large btn-block btn-info';
+
     button.onclick = function () {
       FB.login(function (response) {
         console.log('FB.login callback', response);
