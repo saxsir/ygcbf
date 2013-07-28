@@ -168,7 +168,7 @@ ygcbf.analyze = function(_json) {
   kclust.forEach(function(clust, i){
     var wrap = $('<div>');
     var inner = $('<div>').attr('class', 'tagsinput');
-    var h3 = $('<h3>').innerHTML = 'クラスター' + i + '<span class="tag">test</span>';
+    var h3 = $('<h3>').html ('クラスター' + i);
     var ul = $('<ul>');
     clust.forEach(function(userIndex){
       var li = $('<li>').attr('class', 'tag')
@@ -183,6 +183,13 @@ ygcbf.analyze = function(_json) {
         target : '_blank'
       }).html(users[userIndex].name);
 
+      var img = $('<img>').attr({
+        style : 'margin-left: 10px;',
+        src : users[userIndex].picture,
+        alt : users[userIndex].name
+      });
+
+      a.append(img);
       li.append(a);
       ul.append(li);
     });

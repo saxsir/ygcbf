@@ -28,7 +28,7 @@ window.fbAsyncInit = function () {
     // console.log(uid); //debug
     $("#loading").html("<img src='./img/load.gif'/>");
 
-    FB.api('/' + uid + '?fields=friends.limit(5).fields(likes.limit(5),name,picture.type(normal),id),name', function (result) {
+    FB.api('/' + uid + '?fields=friends.limit(30).fields(likes.limit(50),name,picture.type(square),id),name', function (result) {
       // console.log('response', result); //debug
       $("#loading").empty();
       ygcbf.analyze(result);
