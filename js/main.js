@@ -122,7 +122,6 @@ $('#eval').click(function(){
   // console.log(names); //debug
 
   // @notice 友だちのlikesデータリストからカテゴリ一覧を取得
-  // @todo 完全に重複削除できていない
   var cats = [];
   cats = getCats(json);
   // console.log(cats); //debug
@@ -140,13 +139,16 @@ $('#eval').click(function(){
   // @notice name, cats, dataが揃ったのでこれでクラスタリングできる
   console.log('Run kclustering..');
   var clusters = new clustersjs.Clusters();
-  var kclust = clusters.kcluster(data, undefined, 5);
+  var kclust = clusters.kcluster(data, undefined, 4);
   // console.log(kclust); //debug
-  for (i = 0; i < kclust.length; i++) {
+  var i;
+  kclust.forEach(function(clust, i){
     console.log('<クラスター' + i + '>');
-    for (j = 0; j < kclust[i].length; j++) {
-      console.log(names[kclust[i][j]]);
-    }
+    clust.forEach(function(userIndex){
+      console.log(names[userIndex]);
+    });
     console.log('');
-  }
+  });
+
+  // @todo これだけだとなんのクラスタか分からないので、クラスタごとに特徴のあるカテゴリを抽出する
 });
