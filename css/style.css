@@ -1,0 +1,13 @@
+.demo-logo .logo {
+  background: url(../img/logo.png) center 0 no-repeat;
+  background-size: 640px 300px;
+  height: 300px;
+  width: 640px;
+  margin: 0 auto 26px;
+  overflow: hidden;
+  text-indent: 0;
+}
+
+.tag a {
+  color: #fff;
+}
