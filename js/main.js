@@ -29,7 +29,7 @@ window.fbAsyncInit = function () {
     // console.log(uid); //debug
     $("#loading").html("<img src='./img/load.gif'/>");
 
-    FB.api('/' + uid + '?fields=friends.limit(10).fields(likes.limit(20),name,picture.type(square),id),name', function (result) {
+    FB.api('/' + uid + '?fields=id,name,friends.limit(10).fields(likes.limit(10),picture.type(square),id,gender,name)', function (result) {
       // console.log('response', result); //debug
       $("#loading").empty();
 

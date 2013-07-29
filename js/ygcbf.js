@@ -1,109 +1,119 @@
-// @todo 全体的に無駄なループが多いのでリファクタリングしたい
-// とりあえずfriend.likesの判定が多いので、最初にlikesがないユーザーのデータは除外するべき
-// たぶんそれをやると、makeDataSets内のnameが同じだったら判定とかいらなくなる
-
 var ygcbf = {};
-// @arguments [_json] json形式で渡される友だちのlikesデータリスト
-// @return [Array] カテゴリー名が入った1次元の配列
-ygcbf.getCats = function(_json) {
-  var cats = [];
-  var friends = _json.friends.data;
-  friends.forEach(function(friend){
-    //@notice likesが0の場合はスルー
+
+// @notice データ解析の際に呼び出されるメイン関数
+ygcbf.analyze = function(_data) {
+  // @notice ログインしているユーザー情報を取得
+  var username = _data.name;
+  var user_id = _data.id;
+
+  // @notice likeのあるユーザーのみを抜き出す
+  var friends = [];
+  _data.friends.data.forEach(function(friend){
     if (friend.likes) {
-      friend.likes.data.forEach(function(like){
-        cats.push(like.category);
-      });
+      friends.push(friend);
     }
   });
 
- //@notice 重複しているものを削除してリターン
-  return this.unique(cats);
-};
+  // @notice カテゴリ一覧を取得
+  var cats = this.getCats(friends);
+  // console.log('cats'); console.log(cats);
 
-// @arguments [_json] json形式で渡される友だちのlikesデータリスト
-// @return [Array] 友だちの名前が入った1次元の配列
-ygcbf.getUser = function(_json) {
-  var users = [];
-  var friends = _json.friends.data;
-  friends.forEach(function(friend){
-    // @notice likesの長さが0ならスルー
-    if (friend.likes) {
-      users.push({
-        "uid" : friend.id,
-        "name" : friend.name,
-        "picture" : friend.picture.data.url
+  // @notice 後で使いやすいように友だちのデータを整形しておく
+  var friendData = this.getFriendData(friends, cats);
+  console.log('friendData');console.log(friendData);
+
+  // @notice 解析に利用するデータを友人データから取り出す
+  // @notice likeは単純な数ではなくその人のlike全体に占める割合
+  var names = [];
+  var data = [];
+  friendData.forEach(function(friend){
+    names.push(friend.name);
+    var likeData = [];
+    cats.forEach(function(cat){
+      likeData.push(friend.likes[cat] / friend.likesNum * 100);
+    });
+    data.push(likeData);
+  });
+  console.log('names');console.log(names);
+  console.log('cats');console.log(cats);
+  console.log('data');console.log(data);
+
+  // @notice 解析する
+  console.log('');
+  console.log('Run kclustering..');
+  var clusters = new clustersjs.Clusters();
+  var k = friendData.length / 10;
+  if (k < 2) { k = 2;}
+  var kclust = clusters.kcluster(data, undefined, k);
+
+  // @notice htmlに結果を表示してる
+  $('#result').empty();
+  kclust.forEach(function(clust, i){
+    var wrap = $('<div>');
+    var inner = $('<div>').attr('class', 'tagsinput');
+    var h3 = $('<h3>').html ('クラスター' + i);
+    var ul = $('<ul>');
+    clust.forEach(function(userIndex){
+      var li = $('<li>').attr('class', 'tag');
+
+      var a = $('<a>').attr({
+        //href : 'https://www.facebook.com/' + friendData[userIndex].uid,
+        target : '_blank'
+      }).on('click', function(){
+        $('#myChart').remove();
+        wrap.after($('<canvas>').attr({
+          'id' : 'myChart',
+          'width' : 1000,
+          'height' : 600
+        }));
+        var ctx = document.getElementById("myChart").getContext("2d");
+        var gdata = [];
+        cats.forEach(function(cat){
+          gdata.push(friendData[userIndex].likes[cat]);
         });
-    }
-  });
+        var graph_data = {
+          labels : cats,
+          datasets : [{
+            fillColor : "#3498DB",
+            strokeColor : "#2980B9",
+            pointColor : "rgba(151,187,205,1)",
+            pointStrokeColor : "#fff",
+            data : gdata
+          }]
+        };
+        var myNewChart = new Chart(ctx).Bar(graph_data, {
+          scaleOverlay : true
+        });
+        //var myNewChart = new Chart(ctx).Radar(graph_data, {});
+        console.log(friendData[userIndex]);
+      }).html(friendData[userIndex].name);
 
-  return users;
-};
-
-// @notice 解析しやすい形にデータセットを整形するために、初期化するメソッド
-// @arguments [_json] json形式で渡される友だちのlikesデータリスト
-// @return [Array] 初期化されたデータセット
-ygcbf.initDatasets = function(_names, _cats) {
-  var dsets = [];
-  _names.forEach(function(name) {
-    var data = {};
-    _cats.forEach(function(cat){
-      data[cat] = 0;
-    });
-    var user = {};
-    user.name = name;
-    user.data = data;
-    dsets.push(user);
-  });
-  return dsets;
-};
-
-// @arguments [_json] json形式で渡される友だちのlikesデータリスト
-// @return [Array] 解析しやすい形に整形されたデータセット。
-// データをいれたオブジェクトの配列で、nameに友だちの名前、dataにlikeしたカテゴリごとの数が入ってる
-ygcbf.makeDataSets = function(_json, _names, _cats) {
-  var dsets = this.initDatasets(_names, _cats);
-
-  var friends = _json.friends.data;
-  friends.forEach(function(friend){
-    // @notice もしlikesがあるユーザーであれば、dsetsの中から該当するユーザーを探して、そのユーザーに対して処理をする
-    if (friend.likes) {
-      // @notice forEachだとbreakできないらしい
-      dsets.forEach(function(d){
-        if (d.name === friend.name) {
-          friend.likes.data.forEach(function(like){
-            d.data[like.category] = d.data[like.category] + 1;
-          });
-        }
+      var img = $('<img>').attr({
+        style : 'margin-left: 10px;',
+        src : friendData[userIndex].picture,
+        alt : friendData[userIndex].name
       });
-    }
-  });
 
-  return dsets;
-};
-
-// @arguments [_dsets] データをいれたオブジェクトの配列
-// @return [Array] likeしたカテゴリごとの数を配列にして、全員分まとめて返す
-ygcbf.getData = function(_dsets, _cats) {
-  var data = [], tdata = [];
-  _dsets.forEach(function(u){
-    tdata = [];
-    _cats.forEach(function(cat){
-      tdata.push(u.data[cat]);
+      a.append(img);
+      li.append(a);
+      ul.append(li);
     });
-    data.push(tdata);
+    var fcat = ygcbf.getFeatures(friendData, clust, cats);
+    h3.append('（好きなジャンル: <span style="color:red;">' +  fcat + '</span>）');
+    inner.append(ul);
+    wrap.append(h3);
+    wrap.append(inner);
+    $('#result').append(wrap);
   });
-  return data;
 };
 
-// @arguments [array] 重複した要素が入っている配列（入ってなくてもいいけど）
-// @return [Array] 重複要素を削除した配列
-ygcbf.unique = function(array) {
+// @notice 配列から重複した要素を取り除く関数
+ygcbf.unique = function(_array) {
   var storage = {};
   var uniqueArray = [];
   var i, al, value;
-  for ( i=0, al = array.length; i < al; i++) {
-    value = array[i];
+  for (i=0, al = _array.length; i < al; i++) {
+    value = _array[i];
     if (!(value in storage)) {
       storage[value] = true;
       uniqueArray.push(value);
@@ -112,148 +122,112 @@ ygcbf.unique = function(array) {
   return uniqueArray;
 };
 
-ygcbf.getClustData = function(_dsets, _cats) {
-  var tdata = [];
-  _dsets.forEach(function (u) {
-    tdata = [];
-    _cats.forEach(function (cat) {
-      tdata.push(u.data[cat]);
+// @notice 扱いやすいように整形した友人データを返す
+ygcbf.getFriendData = function(_friends, _cats) {
+  var self = this, friendData = [];
+  // console.log(cats);
+  _friends.forEach(function(friend){
+    var likes = {};
+
+    //@notice 各友人のlikesのデータを取得
+    _cats.forEach(function(cat){
+      likes[cat] = 0;
     });
+    friend.likes.data.forEach(function(like){
+      likes[like.category] = likes[like.category] + 1;
+    });
+    // console.log(likes);
+
+    var likesNum = 0;
+    _cats.forEach(function(cat){
+      likesNum += likes[cat];
+    });
+
+    var user = new self.UserData({
+      'name' : friend.name,
+      'uid' : friend.id,
+      'gender' : friend.gender,
+      'picture' : friend.picture.data.url,
+      'likes' : likes,
+      'likesNum' : likesNum
+    });
+    friendData.push(user);
   });
-  return tdata;
+  return friendData;
 };
 
-// @todo みんながたくさんlikeするカテゴリがあるので、カテゴリごとに重みをつけて計算してあげたい。
-ygcbf.getFeatures = function(_json, clustMembers, _cats) {
-  var clustDsets = this.initDatasets(clustMembers, _cats);
-  var clustData = [];
-  var clustSum = {};
-  var clustMax = 0;
-  var clustMaxCat = "";
-  clustSum.name = "クラスターの合計値";
-  clustSum.data = {};
-  _cats.forEach(function (cat) {
-    clustSum.data[cat] = 0;
-  });
-  var jsonf = _json.friends.data;
-  jsonf.forEach(function (friend) {
-    // @notice もしlikesがあるユーザーであれば、dsetsの中から該当するユーザーを探して、そのユーザーに対して処理をする
-    if (friend.likes) {
-      // @notice forEachだとbreakできないらしい
-      clustDsets.forEach(function (cd) {
-        if (cd.name === friend.name) {
-          friend.likes.data.forEach(function (like) {
-            clustSum.data[like.category] = clustSum.data[like.category] + 1;
-          });
-        }
-      });
-    }
-  });
-  clustData.push(clustSum);
-  var clustd = ygcbf.getClustData(clustData, _cats);
-  var index = 0;
-  // 最大値とインデックスを取得
-  for (var i = 0; i < clustd.length; i++) {
-    if (clustd[i] > clustMax) {
-      clustMax = clustd[i];
-      index = i;
-    }
-  }
-  clustMaxCat = _cats[index];
-  return clustMaxCat;
+//@notice ユーザーオブジェクト(友だちデータを管理する)の雛型
+ygcbf.UserData = function(data) {
+  this.name = data.name;
+  this.uid = data.uid;
+  this.gender = data.gender;
+  this.picture = data.picture;
+  this.likes = data.likes;
+  this.likesNum = data.likesNum;
 };
 
-// @notice このコードが動けばOK
-// @memo jQuery(function($){
-ygcbf.analyze = function(_json) {
-  // @notice データの取得
-  var json = _json;
-
-  // @notice 友だちのlikesデータリストから名前一覧 & プロフ写真のURIを取得
-  var users = [];
-  users = this.getUser(json);
-  // console.log(users); //debug
-
-  var names = [];
-  users.forEach(function(user){
-    names.push(user.name);
-  });
-
-  // console.log(names); //debug
-
-  // @notice 友だちのlikesデータリストからカテゴリ一覧を取得
+// @notice likesに出現するカテゴリーの一覧を返す
+ygcbf.getCats = function(_friends) {
   var cats = [];
-  cats = this.getCats(json);
-  // console.log(cats); //debug
+  _friends.forEach(function(friend){
+    friend.likes.data.forEach(function(like){
+      cats.push(like.category);
+    });
+  });
 
-  // @notice 解析用データセットの作成
-  var dsets = [];
-  dsets = this.makeDataSets(json, names, cats);
-  // console.log(dsets); //debug
+  // @notice 重複削除してリターン
+  return this.unique(cats);
+};
 
-  // @notice データセットからdataを取り出す
-  var data = [];
-  data = this.getData(dsets, cats);
-  // console.log(data); //debug
+// @notice getFeatureを書きなおしてみた
+ygcbf.getFeatures = function(_friendData, _clust, _cats) {
+  var clustDsets = {};
+  // @notice 全カテゴリの数を0で初期化
+  _cats.forEach(function(cat){
+    clustDsets[cat] = 0;
+  });
 
-  // @notice name, cats, dataが揃ったのでこれでクラスタリングできる
-  // @todo kの値を自動で適当にやりたい
-  console.log('Run kclustering..');
-  var clusters = new clustersjs.Clusters();
-  var k = 4;
-  var kclust = clusters.kcluster(data, undefined, k);
-  // console.log(kclust); //debug
+  _clust.forEach(function(userIndex){
+    _cats.forEach(function(cat){
+      clustDsets[cat]+= _friendData[userIndex].likes[cat];
+    });
+  });
+  console.log(clustDsets);
 
-  // @notice コンソールに結果を出力
-  // @notice 変数clustの中身はそのクラスタに属しているユーザーのインデックス番号
-  // @todo これだけだとなんのクラスタか分からないので、クラスタごとに特徴のあるカテゴリを抽出して表示したい
+  var maxCatIndex = 0, maxCat = 0;
+  _cats.forEach(function(cat, index){
+    if (maxCat < clustDsets[cat]) {
+      maxCat = clustDsets[cat];
+      maxCatIndex = index;
+    }
+  });
+
   /*
-  kclust.forEach(function(clust, i){
-    console.log('<クラスター' + i + '>');
-    clust.forEach(function(userIndex){
-      console.log(users[userIndex].name);
-      console.log(users[userIndex].picture); //debug
-    });
-    var fcat = ygcbf.getFeatures(json,clust, cats);
-    console.log("人気のカテゴリー"+ fcat);
-    console.log('');
-  });
-  */
-
-  // @notice htmlに結果を表示してる
-  kclust.forEach(function(clust, i){
-    var wrap = $('<div>');
-    var inner = $('<div>').attr('class', 'tagsinput');
-    var h3 = $('<h3>').html ('クラスター' + i);
-    var ul = $('<ul>');
-    clust.forEach(function(userIndex){
-      var li = $('<li>').attr('class', 'tag')
-      .on('mouseover', function(){
-        console.log('show image');
-      }).on('mouseout', function(){
-        console.log('hide image');
-      });
-
-      var a = $('<a>').attr({
-        href : 'https://www.facebook.com/' + users[userIndex].uid,
-        target : '_blank'
-      }).html(users[userIndex].name);
-
-      var img = $('<img>').attr({
-        style : 'margin-left: 10px;',
-        src : users[userIndex].picture,
-        alt : users[userIndex].name
-      });
-
-      a.append(img);
-      li.append(a);
-      ul.append(li);
-    });
-    var fcat = ygcbf.getFeatures(json,clust, cats);
-    h3.append('（好きなジャンル: <span style="color:red;">' +  fcat + '</span>）');
-    inner.append(ul);
-    wrap.append(h3);
-    wrap.append(inner);
-    $('#result').append(wrap);
-  });
+        wrap.after($('<canvas>').attr({
+          'id' : 'myChart',
+          'width' : 1000,
+          'height' : 600
+        }));
+        var ctx = document.getElementById("myChart").getContext("2d");
+        var gdata = [];
+        cats.forEach(function(cat){
+          gdata.push(friendData[userIndex].likes[cat]);
+        });
+        var graph_data = {
+          labels : cats,
+          datasets : [{
+            fillColor : "#3498DB",
+            strokeColor : "#2980B9",
+            pointColor : "rgba(151,187,205,1)",
+            pointStrokeColor : "#fff",
+            data : gdata
+          }]
+        };
+        var myNewChart = new Chart(ctx).Bar(graph_data, {});
+        //var myNewChart = new Chart(ctx).Radar(graph_data, {});
+        console.log(friendData[userIndex]);
+*/
+  //console.log(maxCat);
+  //console.log(maxCatIndex);
+  return _cats[maxCatIndex];
 };
