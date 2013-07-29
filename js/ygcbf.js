@@ -112,6 +112,57 @@ ygcbf.unique = function(array) {
   return uniqueArray;
 };
 
+ygcbf.getClustData = function(_dsets, _cats) {
+  var tdata = [];
+  _dsets.forEach(function (u) {
+    tdata = [];
+    _cats.forEach(function (cat) {
+      tdata.push(u.data[cat]);
+    });
+  });
+  return tdata;
+};
+
+// @todo みんながたくさんlikeするカテゴリがあるので、カテゴリごとに重みをつけて計算してあげたい。
+ygcbf.getFeatures = function(_json, clustMembers, _cats) {
+  var clustDsets = this.initDatasets(clustMembers, _cats);
+  var clustData = [];
+  var clustSum = {};
+  var clustMax = 0;
+  var clustMaxCat = "";
+  clustSum.name = "クラスターの合計値";
+  clustSum.data = {};
+  _cats.forEach(function (cat) {
+    clustSum.data[cat] = 0;
+  });
+  var jsonf = _json.friends.data;
+  jsonf.forEach(function (friend) {
+    // @notice もしlikesがあるユーザーであれば、dsetsの中から該当するユーザーを探して、そのユーザーに対して処理をする
+    if (friend.likes) {
+      // @notice forEachだとbreakできないらしい
+      clustDsets.forEach(function (cd) {
+        if (cd.name === friend.name) {
+          friend.likes.data.forEach(function (like) {
+            clustSum.data[like.category] = clustSum.data[like.category] + 1;
+          });
+        }
+      });
+    }
+  });
+  clustData.push(clustSum);
+  var clustd = ygcbf.getClustData(clustData, _cats);
+  var index = 0;
+  // 最大値とインデックスを取得
+  for (var i = 0; i < clustd.length; i++) {
+    if (clustd[i] > clustMax) {
+      clustMax = clustd[i];
+      index = i;
+    }
+  }
+  clustMaxCat = _cats[index];
+  return clustMaxCat;
+};
+
 // @notice このコードが動けばOK
 // @memo jQuery(function($){
 ygcbf.analyze = function(_json) {
@@ -146,25 +197,30 @@ ygcbf.analyze = function(_json) {
   // console.log(data); //debug
 
   // @notice name, cats, dataが揃ったのでこれでクラスタリングできる
+  // @todo kの値を自動で適当にやりたい
   console.log('Run kclustering..');
   var clusters = new clustersjs.Clusters();
-  var kclust = clusters.kcluster(data, undefined, 4);
+  var k = 4;
+  var kclust = clusters.kcluster(data, undefined, k);
   // console.log(kclust); //debug
 
   // @notice コンソールに結果を出力
+  // @notice 変数clustの中身はそのクラスタに属しているユーザーのインデックス番号
   // @todo これだけだとなんのクラスタか分からないので、クラスタごとに特徴のあるカテゴリを抽出して表示したい
   /*
   kclust.forEach(function(clust, i){
     console.log('<クラスター' + i + '>');
     clust.forEach(function(userIndex){
       console.log(users[userIndex].name);
-      // console.log(users[userIndex].picture); //debug
+      console.log(users[userIndex].picture); //debug
     });
+    var fcat = ygcbf.getFeatures(json,clust, cats);
+    console.log("人気のカテゴリー"+ fcat);
     console.log('');
   });
-*/
+  */
 
-  // @notice htmlに要素追加して表示
+  // @notice htmlに結果を表示してる
   kclust.forEach(function(clust, i){
     var wrap = $('<div>');
     var inner = $('<div>').attr('class', 'tagsinput');
@@ -193,6 +249,8 @@ ygcbf.analyze = function(_json) {
       li.append(a);
       ul.append(li);
     });
+    var fcat = ygcbf.getFeatures(json,clust, cats);
+    h3.append('（好きなジャンル: <span style="color:red;">' +  fcat + '</span>）');
     inner.append(ul);
     wrap.append(h3);
     wrap.append(inner);
