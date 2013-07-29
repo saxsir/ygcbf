@@ -9,6 +9,16 @@
  */
 
 //@notice clustersjsでカプセル化してる
+/*!
+ * Clusters.js v1.0
+ * Rewrite for ygcbf. (Delete some functions)
+ *
+ * Copyright 2013 saxsir
+ * Released under the MIT license
+ *
+ * Date: 2013-7-25
+ */
+//@notice clustersjsでカプセル化してる
 var clustersjs = (function () {
   var Clusters = function () {};
   /*
@@ -372,111 +382,3 @@ var clustersjs = (function () {
   res.Clusters = Clusters;
   return res;
 })();
-
-
-
-// @todo デンドログラムをcanvasに書けるようにする
-
-/*
- * 与えられたクラスタの高さの合計を求める関数
- * そのクラスタが終端であれば1を返す再帰関数
- */
-/*
-Clusters.prototype.getHeight = function (clust) {
-  // 終端であれば高さは1を返す
-  if (clust.left === null && clust.right === null) {
-    return 1;
-  }
-
-  return this.getHeight(clust.left) + this.getHeight(clust.right)
-}
-*/
-/*
- * ルートノードへの距離の合計を求める関数
- */
-/*
-Clusters.prototype.getDepth = function (clust) {
-  // 終端への距離は0.0
-  if (clust.left === null && clust.right === null) {
-    return 0;
-  }
-
-  // 枝の距離は二つの方向の大きい方にそれ自身の距離を足す
-  return Math.max(this.getDepth(clust.left), this.getDepth(clust.right)) + clust.distance
-}
-*/
-
-/*
- * デンドログラムを描画
- */
-/*Clusters.prototype.drawDendrogram = function (clust, labels, id) {
-  var canvas = document.getElementById(id);
-  if (!canvas || !canvas.getContext) {
-    alert('canvasに対応しているブラウザで開いてください');
-    return false;
-  }
-
-  var height = this.getHeight(clust) * 20;
-  var width = 900;
-
-  var ctx = canvas.getContext('2d');
-  ctx.height = height;
-  ctx.width = width;
-  ctx.clearRect(0, 0, ctx.width, ctx.height);
-
-  // 最初のノードを描く
-  var scaling = (width - 150) / this.getDepth(clust);
-  this.drawNode(ctx, clust, 10, (height/2), scaling, labels);
-}
-*/
-
-/*
- * 子ノードたちの高さを受け取り、それらがあるべき場所を計算し、それに対して１本の長い垂直な直線と2本の水平な直線を描画する関数
- */
-/*
-Clusters.prototype.drawNode = function(ctx, clust, x, y, scaling, labels) {
-  console.log("x: " + x);
-  console.log("y: " + y);
-  if (clust.id < 0) {
-    var h1 = this.getHeight(clust.left) * 20;
-    var h2 = this.getHeight(clust.right) * 20;
-    var top = y - (h1 +h2) / 2;
-    var bottom = y + (h1 + h2) / 2;
-
-    var lineLength = clust.distance*scaling;
-
-    ctx.lineWidth = 2;
-    ctx.strokeStyle="black";
-
-    // クラスタから子への垂直な直線
-    ctx.beginPath();
-    ctx.moveTo(x, top+h1/h2);
-    ctx.lineTo(x, bottom-h2/2);
-    ctx.stroke();
-
-    // 左側のアイテムへの水平な直線
-    ctx.beginPath();
-    ctx.moveTo(x, top+h1/h2);
-    ctx.lineTo(x+lineLength, top+h1/h2);
-    ctx.stroke();
-
-    // 右側のアイテムへの水平な直線
-    ctx.beginPath();
-    ctx.moveTo(x, bottom-h2/2);
-    ctx.lineTo(x+lineLength, bottom-h2/2);
-    ctx.stroke();
-
-    // 左右のノードたちを描く関数を呼び出す
-    this.drawNode(ctx, clust.left, x+lineLength, top+h1/2, scaling, labels);
-    this.drawNode(ctx, clust.right, x+lineLength, bottom-h2/2, scaling, labels);
-
-  } else {
-    // 終点であればアイテムのラベルを描く
-    ctx.font = "14px 'ＭＳ Ｐゴシック'";
-    ctx.fillStyle = "black";
-    console.log(x);
-    console.log(y);
-    //ctx.fillText(labels[clust.id], x+5, y-7);
-  }
- }
-*/
