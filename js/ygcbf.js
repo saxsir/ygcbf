@@ -60,6 +60,7 @@ ygcbf.analyze = function(_data) {
         //href : 'https://www.facebook.com/' + friendData[userIndex].uid,
         target : '_blank'
       }).on('click', function(){
+        /*
         $('#myChart').remove();
         wrap.after($('<canvas>').attr({
           'id' : 'myChart',
@@ -85,6 +86,7 @@ ygcbf.analyze = function(_data) {
           scaleOverlay : true
         });
         //var myNewChart = new Chart(ctx).Radar(graph_data, {});
+        */
         console.log(friendData[userIndex]);
       }).html(friendData[userIndex].name);
 
