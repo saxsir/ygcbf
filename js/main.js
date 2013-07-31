@@ -33,7 +33,12 @@ window.fbAsyncInit = function () {
       // console.log('response', result); //debug
       $("#loading").empty();
 
-      ygcbf.analyze(result);
+      if (!result || result.error) {
+        alert('データ取得エラー');
+      }
+      else {
+        ygcbf.analyze(result);
+      }
     });
   });
 };

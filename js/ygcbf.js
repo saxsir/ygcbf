@@ -20,7 +20,7 @@ ygcbf.analyze = function(_data) {
 
   // @notice 後で使いやすいように友だちのデータを整形しておく
   var friendData = this.getFriendData(friends, cats);
-  console.log('friendData');console.log(friendData);
+  // console.log('friendData');console.log(friendData); //debug
 
   // @notice 解析に利用するデータを友人データから取り出す
   // @notice likeは単純な数ではなくその人のlike全体に占める割合
@@ -34,12 +34,11 @@ ygcbf.analyze = function(_data) {
     });
     data.push(likeData);
   });
-  console.log('names');console.log(names);
-  console.log('cats');console.log(cats);
-  console.log('data');console.log(data);
+  // console.log('names');console.log(names); //debug
+  // console.log('cats');console.log(cats); //debug
+  // console.log('data');console.log(data); //debug
 
   // @notice 解析する
-  console.log('');
   console.log('Run kclustering..');
   var clusters = new clustersjs.Clusters();
   var k = friendData.length / 10;
@@ -194,7 +193,7 @@ ygcbf.getFeatures = function(_friendData, _clust, _cats) {
       clustDsets[cat]+= _friendData[userIndex].likes[cat];
     });
   });
-  console.log(clustDsets);
+  // console.log(clustDsets); //debug
 
   var maxCatIndex = 0, maxCat = 0;
   _cats.forEach(function(cat, index){
