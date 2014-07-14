@@ -37,6 +37,7 @@ window.fbAsyncInit = function () {
         alert('データ取得エラー');
       }
       else {
+        console.log(result);
         ygcbf.analyze(result);
       }
     });
